@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+
+    <title>Infinispan: An Overview</title>
+
+    <meta name="description" content="Infinispan Cluster Partition Handling" />
+    <meta name="author" content="Tristan Tarrant" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <link rel="stylesheet" href="css/reveal.min.css" />
+    <link rel="stylesheet" href="css/theme/moon.css" id="theme" />
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/css/zenburn.css" />
+
+    <link rel="stylesheet" href="css/font-awesome.css" />
+    <style>
+        .reveal i {
+            font-family: 'FontAwesome';
+            font-style: normal;
+        }
+        .reveal ul {
+            padding-bottom: 1em;
+        }
+    </style>
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+        if (window.location.search.match(/print-pdf/gi)) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.type = 'text/css';
+            link.href = 'css/print/pdf.css';
+            document.getElementsByTagName('head')[0].appendChild(link);
+        }
+    </script>
+</head>
+
+<body>
+
+    <div class="reveal">
+
+        <!-- Any section element inside of this container is displayed as a slide -->
+        <div class="slides">
+            <section>
+                <h1>Infinispan:<br/>An Overview</h1>
+                <h3>From Caching to Data Grids</h3>
+                <p>
+                    <small>Tristan Tarrant / <a href="http://twitter.com/tristantarrant"><i class="fa fa-twitter"></i> @tristantarrant</a></small>
+                </p>
+            </section>
+
+            <section>
+                <h2>About me</h2>
+                <img src="img/ttarrant.jpg" style="width: 20%" />
+                <p>Infinispan Project Lead</p>
+                <p>Open Source hacker since 1993</p>
+                <p>@ Red Hat since 2011</p>
+            </section>
+
+            <section class="stack">
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 23px; top: 320px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: center;">
+                            <h1>WHAT IS INFINISPAN ?</h1>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div dir="ui" class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>NOT JUST NOSQL
+                                <br/>
+                            </h2>
+                            <h4>Infinispan is a distributed in-memory key/value data store with optional 
+schema.</h4>
+                            <h4>Available under the ASL 2.0</h4>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div dir="ui" class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h3>FROM LOCAL ...</h3>
+                            <ul>
+                                <li>Store "slow" data locally
+                                    <ul>
+                                        <li>Lookup tables
+                                            <br/>
+                                        </li>
+                                        <li>Retrieved from slow systems (DB, WebServices, etc)
+                                            <br/>
+                                        </li>
+                                        <li>Computed
+                                            <br/>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                            <h3>...TO DATA GRIDS
+                                <br/>
+                            </h3>
+                            <ul>
+                                <li>Primary store</li>
+                                <li>Complex operations
+                                    <br/>
+                                </li>
+                                <li>Share and Scale
+                                    <br/>
+                                </li>
+                                <li>Search, Compute, etc
+                                    <br/>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </section>
+            <section class="stack">
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 210px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: center;">
+                            <h1>STORE &amp; RETRIEVE</h1>
+                            <p>Opening a Door is Easy if You Have the Key</p>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>IN-MEMORY KEY/VALUE STORE</h2>
+                            <h3>API</h3>
+                            <ul>
+                                <li>ConcurrentHashMap</li>
+                                <li>JCache</li>
+                                <li>CDI</li>
+                                <li>Spring Cache</li>
+                                <li>Experimental functional API</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <pre>
+<code>// Construct a simple local cache manager with default configuration
+DefaultCacheManager cacheManager = new DefaultCacheManager();
+// Obtain the default cache
+Cache&lt;String, String&gt; cache = cacheManager.getCache();
+// Store a value
+cache.put("key", "value");
+// Retrieve the value and print it out
+System.out.printf("key = %s\n", cache.get("key"));
+// Stop the cache manager and release all resources
+cacheManager.stop();</code></pre>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>IN-MEMORY KEY/VALUE STORE</h2>
+                            <h3>EXTRA FEATURES</h3>
+                            <ul>
+                                <li>Immortal and mortal entries</li>
+                                <li>Java refs or marshalled as binary</li>
+                                <li>Bounded by entry count or memory occupation</li>
+                                <li>Explicit locks</li>
+                                <li>Transactions complete with support for XA and Recovery</li>
+                                <li>Persistence / Passivation
+                                    <ul>
+                                        <li>File, JDBC, JPA, LevelDB, Redis, etc</li>
+                                    </ul>
+                                </li>
+                                <li>Authorization
+                                    <ul>
+                                        <li>Coarse-grained</li>
+                                        <li>JAAS, policies and the SecurityManager</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </section>
+            <section class="stack">
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 210px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: center;">
+                            <h1>SCALE &amp; SHARE</h1>
+                            <p>Be generous with your data and your data will be generous with you</p>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>CLUSTERING</h2>
+                            <h3>CLUSTERED CACHES</h3>
+                            <ul>
+                                <li>
+                                    <strong>Replication</strong> &gt; all nodes have all the data
+                                </li>
+                                <li>
+                                    <strong>Distribution</strong> &gt; <em>n</em> copies of the data in the cluster, defined by Consistent Hash
+                                </li>
+                                <li>
+                                    <strong>Invalidation</strong> &gt; when I change data on one node, it gets invalidated on all other nodes
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" >
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <pre>
+<code>GlobalConfigurationBuilder global = 
+    GlobalConfigurationBuilder.defaultClusteredBuilder();
+ConfigurationBuilder builder = new ConfigurationBuilder();
+builder.clustering().cacheMode(CacheMode.DIST_SYNC);
+DefaultCacheManager cacheManager = 
+    new DefaultCacheManager(global.build(), builder.build());
+Cache&lt;String, String&gt; cache = cacheManager.getCache();
+for(int i=0; i < 10; i++) {
+ cache.put(UUID.randomUUID().toString(), cacheManager.getNodeAddress());
+}
+// Display the current cache contents for the whole cluster
+cache.entrySet().forEach(entry -> 
+    System.out.printf("%s = %s\n", entry.getKey(), entry.getValue()));
+cacheManager.stop();</code></pre>
+                        </div>
+                    </div>
+                </section>
+                
+                <!--section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>CLUSTERING</h2>
+                            <h3>JGROUPS: THE CLUSTERING TRANSPORT</h3>
+                            <ul>
+                                <li>Many discovery protocols &gt; Multicast, Static, S3, JDBC, File, etc</li>
+                                <li>Failure detection</li>
+                                <li>Security</li>
+                                <li>Lots of distributed building blocks available &gt; PubSub, Counters, Dist Locks, etc</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section-->
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>CLUSTERING</h2>
+                            <h3>ADDITIONAL FEATURES #1</h3>
+                            <ul>
+                                <li><strong>Sync</strong> and <strong>async</strong></li>
+                                <li><strong>Efficient marshalling</strong> JBoss Marshalling</li>
+                                <li><strong>Dynamic rebalancing</strong> add / remove nodes and the cluster adjusts</li>
+                                <li><strong>Server hinting</strong> avoids keeping copies on the same physical server/rack</li>
+                                <li><strong>Grouping</strong> Keep logically-related data close together on the same nodes</li>
+                                <li><strong>Key affinity</strong> Keep data local to a specific node</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>CLUSTERING</h2>
+                            <h3>ADDITIONAL FEATURES #2</h3>
+                            <ul>
+                                <li><strong>Cross-site replication</strong> back-up your caches to remote sites</li>
+                                <li><strong>Partition Handling</strong> CP or AP ?</li>
+                                <li><strong>Clustered iterators</strong> Navigate data in a memory-efficient way and survive rebalances</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>SEPARATE DATA FROM APPLICATION #1</h2>
+                            <h3>HOTROD</h3>
+                            <ul>
+                                <li>Language independent protocol</li>
+                                <li>Intelligent protocol
+                                    <ul>
+                                        <li>Topology aware &gt; changes to the server cluster automatically sent to clients</li>
+                                        <li>Hash aware &gt; clients connect directly to data owners, avoids extra hops</li>
+                                    </ul>
+                                </li>
+                                <li>Encryption w/TLS</li>
+                                <li>Authentication w/SASL &gt; PLAIN, DIGEST-MD5, GSSAPI</li>
+                                <li>Java, C++, C# clients. Javascript coming soon</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>SEPARATE DATA FROM APPLICATION #2</h2>
+                            <h3>REST</h3>
+                            <ul>
+                                <li>Automatic Content-type conversion (JSON, XML)</li>
+                                <li>Encryption w/TLS</li>
+                                <li>Authentication</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>SEPARATE DATA FROM APPLICATION #2</h2>
+                            <h3>OTHER</h3>
+                            <ul>
+                                <li>Memcached, WebSockets</li>
+                                <li>Compatibility mode</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </section>
+            <section class="stack">
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 210px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: center;">
+                            <h1>Listen and Query</h1>
+                            <p>Noisy Needles Meet Haystack.</p>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>EVENTS AND LISTENERS #1</h2>
+                            <h3>DETECT CHANGES IN DATA</h3>
+                            <ul>
+                                <li>CUD events</li>
+                                <li>Expiration events
+
+                                    <ul>
+                                        <li>Archive expired data</li>
+                                        <li>Trigger data refresh on expiration</li>
+                                    </ul>
+                                </li>
+                                <li>Pre- and post- event</li>
+                                <li>Clustered events &gt; detect changes on other nodes</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+<pre><code>cache.addListener(new MyListener());
+
+@Listener
+public static class MyListener {
+
+  @CacheEntryCreated
+  public void entryCreated(CacheEntryCreatedEvent event) {
+        System.out.printf("Created %s\n", event.getKey());
+  }
+
+  @CacheEntryModified
+  public void entryModified(CacheEntryModifiedEvent event) {
+        System.out.printf("About to modify %s\n", event.getKey());
+  }
+}
+</code></pre>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>EVENTS AND LISTENERS #2</h2>
+                            <h3>REMOTE EVENTS</h3>
+                            <ul>
+                                <li>Detect changes happening on the server</li>
+                                <li>Deployable server-side converters and filters &gt; Optimize traffic/Reduce noise</li>
+                                <li>Near caching with invalidation</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>QUERYING</h2>
+                            <h3>FIND DATA BY LOOKING AT VALUES</h3>
+                            <ul>
+                                <li>Built with Lucene and Hibernate Search</li>
+                                <li>Lucene queries and Query DSL</li>
+                                <li>Aggregates, Grouping, Ordering</li>
+                                <li>Dynamic indexing</li>
+                                <li>Mass reindexing for bulk loading / cache priming</li>
+                            </ul>
+                            <h3>REMOTE QUERYING</h3>
+                            <ul>
+                                <li>ProtoBuf schemas for cross-language compatibility</li>
+                                <li>Query DSL</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>CONTINUOUS QUERIES</h2>
+                            <h3>LISTENERS AND QUERIES TOGETHER</h3>
+                            <ul>
+                                <li>Create a query</li>
+                                <li>Obtain a result set</li>
+                                <li>Receive events when
+
+                                    <ul>
+                                        <li>new entries match</li>
+                                        <li>old entries stop matching</li>
+                                    </ul>
+                                </li>
+                                <li>Both embedded and remote</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </section>
+            <section class="stack">
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 210px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: center;">
+                            <h1>Compute</h1>
+                            <p>If the Mountain Won't Come to You, You Go To the Mountain</p>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>DISTRIBUTED EXECUTION</h2>
+                            <h3>RUN THE CODE CLOSE TO THE DATA</h3>
+                            <ul>
+                                <li>On all nodes</li>
+                                <li>Only on the nodes which own certain keys</li>
+                                <li>Receive results asynchronously</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>MAP/REDUCE</h2>
+                            <h3>DIVIDE AND CONQUER</h3>
+                            <ul>
+                                <li>Multi-phase distributed computation</li>
+                                <li>Map (transform) entries on each node &gt; multi-threaded</li>
+                                <li>Reduce multiple results to a single result after each mapping</li>
+                                <li>Collate the results of multiple reductions on each node</li>
+                                <li>Collect the results from all Collations to the master node</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>JAVA STREAMS</h2>
+                            <h3>A Functional API for processing streams of data</h3>
+                            <ul>
+                                <li>Included in the Collections API since JDK 8</li>
+                                <li>Much more than map/reduce: filters, folding, sorting, matching, etc</li>
+                                <li>Chain multiple operations until terminal operations</li>
+                                <li>Custom consumers, suppliers, etc using lambda functions</li>
+                                <li>Explicit and implicit parallelism</li>
+                            </ul>
+                            <h3>STREAMS IN INFINISPAN</h3>
+                            <ul>
+                                <li>Replace our homebrew map/reduce framework</li>
+                                <li>Fully distributed !</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>STORED TASKS</h2>
+                            <h3>The Problem</h3>
+                            <ul>
+                                <li>The embedded API is richer than the remote one</li>
+                                <li>Tied to Java, both in code and in concepts</li>
+                            </ul>
+                            <h3>The Solution</h3>
+                            <ul>
+                                <li>
+                                    Create named tasks in the server
+
+                                    <ul>
+                                        <li>Scripts (javax.script, Nashorn, Scala, Java, etc)</li>
+                                        <li>Deployments (8.2)</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>STORED TASKS</h2>
+                            <h3>Features</h3>
+                            <ul>
+                                <li>Named parameter substitution</li>
+                                <li>Single- and multiple-node execution modes</li>
+                                <li>Use all the features: transactions, streams, security, grouping, etc</li>
+                                <li>More control over execution (8.1/8.2)
+                                    <ul>
+                                        <li>Cancelling</li>
+                                        <li>Throttling</li>
+                                        <li>Authorization</li>
+                                        <li>Audit</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </section>
+            <section class="stack">
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 210px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: center;">
+                            <h1>INTEGRATIONS</h1>
+                            <p>Data here, data there, data everywhere</p>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>BIG DATA ANALYTICS</h2>
+                            <h3>The Hadoop Ecosystem</h3>
+                            <ul>
+                                <li>Hadoop has a large family of tools: Hive, Pig, Tez, etc</li>
+                                <li>InputFormat / OutputFormat: the standard integration point</li>
+                            </ul>
+                            <h3>Infinispan Integrations</h3>
+                            <ul>
+                                <li>InputFormat and OutputFormat over HotRod</li>
+                                <li>RDD and DStream for Spark: micro-batching</li>
+                                <li>Flink: real streaming</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <div class="sl-block" data-block-type="text" style="height: auto; width: 915px; left: 45px; top: 70px;">
+                        <div class="sl-block-content" style="z-index: 11; text-align: left;">
+                            <h2>OTHER INTEGRATIONS</h2>
+                            <h3>Move data to/from other systems</h3>
+                            <ul>
+                                <li><strong>Camel</strong> route data to/from Infinispan caches</li>
+                                <li><strong>Gora &amp; Avro</strong> as a data-source for Nutch, etc.</li>
+                                <li><strong>Teiid</strong> as a data-source</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </section>
+
+            <section>
+                <h1>Thanks / Q&amp;A</h1>
+                <p><a href="http://infinispan.org"><i class="fa fa-cloud"></i> http://infinispan.org</a></p>
+                <p><a href="http://twitter.com/infinispan"><i class="fa fa-twitter"></i> @infinispan</a> + <a href="http://twitter.com/tristantarrant">@tristantarrant</a></p>
+                <p><a href="https://github.com/infinispan"><i class="fa fa-github"></i> https://github.com/infinispan</a></p>
+            </section>
+
+        </div>
+
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.min.js"></script>
+
+    <script>
+        // Full list of configuration options available here:
+        // https://github.com/hakimel/reveal.js#configuration
+        Reveal.initialize({
+            controls: true,
+            progress: true,
+            history: true,
+            center: true,
+
+            theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+            transition: Reveal.getQueryHash().transition || 'linear', // default/cube/page/concave/zoom/linear/fade/none
+
+            // Parallax scrolling
+            // parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+            // parallaxBackgroundSize: '2100px 900px',
+
+            // Optional libraries used to extend on reveal.js
+            dependencies: [
+                {
+                    src: 'lib/js/classList.js',
+                    condition: function () {
+                        return !document.body.classList;
+                    }
+                            },
+                {
+                    src: 'plugin/markdown/marked.js',
+                    condition: function () {
+                        return !!document.querySelector('[data-markdown]');
+                    }
+                            },
+                {
+                    src: 'plugin/markdown/markdown.js',
+                    condition: function () {
+                        return !!document.querySelector('[data-markdown]');
+                    }
+                            },
+                {
+                    src: 'plugin/highlight/highlight.js',
+                    async: true,
+                    callback: function () {
+                        hljs.initHighlightingOnLoad();
+                    }
+                            },
+                {
+                    src: 'plugin/zoom-js/zoom.js',
+                    async: true,
+                    condition: function () {
+                        return !!document.body.classList;
+                    }
+                            },
+                {
+                    src: 'plugin/notes/notes.js',
+                    async: true,
+                    condition: function () {
+                        return !!document.body.classList;
+                    }
+                            }
+				]
+        });
+    </script>
+
+</body>
+
+</html>
